@@ -40,80 +40,52 @@ const (
 
 func main() {
 
-  lis := file_scan("/home/chi/code/go_hangman/dict", 18)
+  lis := file_scan("/home/chi/code/go_hangman/dict", 6)
 
-  for e := lis.Front(); e != nil; e = e.Next() {
-    fmt.Printf("%s\n", e.Value)
-  }
+  //for e := lis.Front(); e != nil; e = e.Next() {
+  //  fmt.Printf("%s\n", e.Value)
+  //}
+  //uniq_count, total_count, pos_count := char_count(18, lis)
+  _, _, pos_count := char_count(6, lis)
+
+  //for i, val := range total_count {
+  //  fmt.Printf("** %c %d\n", i + 65, val)
+  //  fmt.Printf("*  %c %d\n", i + 65, uniq_count[i])
+  //}
+
+  //fmt.Printf("\n\n")
+  //for _, i := range pos_count {
+  //  for j := 0; j < 26; j++ {
+  //    fmt.Printf("%d ", i[j])
+  //  }
+  // fmt.Printf("\n")
+  //}
+
 }
 
-func char_count(lis *list.List) []uint {
-  var counter [26]uint
+func char_count(word_len int, lis *list.List) ([]uint, []uint, [][26]uint) {
+  var total_count, uniq_count, temp [26]uint
+  pos_count := make([][26]uint, word_len)
 
-  for i := 0; i < 26; i++ {
-    counter[i] = 0
-  }
+  // for each word
+  for e := lis.Front(); e != nil; e = e.Next() {
 
-  for e := lis.Front(); e != nil; e.Next() {
-    for _, val :=  range e.Value {
-      switch val {
-        case 'A' :
-          counter[A] += 1
-        case 'B' :
-          counter[B] += 1
-        case 'C' :
-          counter[C] += 1
-        case 'D' :
-          counter[D] += 1
-        case 'E' :
-          counter[E] += 1
-        case 'F' :
-          counter[F] += 1
-        case 'G' :
-          counter[G] += 1
-        case 'H' :
-          counter[H] += 1
-        case 'I' :
-          counter[I] += 1
-        case 'J' :
-          counter[J] += 1
-        case 'K' :
-          counter[K] += 1
-        case 'L' :
-          counter[L] += 1
-        case 'M' :
-          counter[M] += 1
-        case 'N' :
-          counter[N] += 1
-        case 'O' :
-          counter[O] += 1
-        case 'P' :
-          counter[P] += 1
-        case 'Q' :
-          counter[Q] += 1
-        case 'R' :
-          counter[R] += 1
-        case 'S' :
-          counter[S] += 1
-        case 'T' :
-          counter[T] += 1
-        case 'U' :
-          counter[U] += 1
-        case 'V' :
-          counter[V] += 1
-        case 'W' :
-          counter[W] += 1
-        case 'X' :
-          counter[X] += 1
-        case 'Y' :
-          counter[Y] += 1
-        case 'Z' :
-          counter[Z] += 1
-      }
+    // (string) needed, as type assertion for interface type
+    // for each letter in word
+    for i, val :=  range e.Value.(string) {
+      total_count[val - 65] += 1
+      temp[val - 65] = 1
+      pos_count[i][val-65] += 1
+    }
+
+    // set and init
+    for i, v := range temp {
+      uniq_count[i] += v
+      temp[i] = 0
     }
   }
 
-  return counter[:]
+  return uniq_count[:], total_count[:], pos_count[:]
 }
 
 func file_scan(name string, word_len int)  *list.List {
