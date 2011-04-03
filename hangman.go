@@ -5,6 +5,8 @@ import (
   "os"
   "container/list"
   "strings"
+  "rand"
+  "time"
 )
 
 const (
@@ -81,6 +83,9 @@ func try_word (word string) {
   file_scan("dict", word_len)
   char_count(word_len)
 
+  fmt.Printf("%2d %2d guess:  \tleft: %6d\t", total_tries, bad_tries, l_list_size)
+  fmt.Printf("so far: %s\n", l_so_far)
+
   for {
     l, w := pick()
     lg, wg := try_guess(l, w)
@@ -88,14 +93,13 @@ func try_word (word string) {
       bad_tries++
     }
     total_tries += 1
-    fmt.Printf("%d %d guess: %c\tleft: %d\t\t", total_tries, bad_tries, l, l_list_size)
-
-    // if word all filled in, then quit
-
     updates (l, w)
+
+    fmt.Printf("%2d %2d guess: %c\tleft: %6d\t", total_tries, bad_tries, l, l_list_size)
     fmt.Printf("so far: %s\n", l_so_far)
 
     if wg {
+      //fmt.Printf("<%d %s\n>%d %s\n", total_tries, l_word, bad_tries, l_word)
       break
     }
   }
@@ -107,17 +111,73 @@ func try_word (word string) {
 
 func pick () (byte, string) {
 
+  rand.Seed(time.Nanoseconds())
+
   max_val   := uint(0)
   max_pos   := uint(0)
+  //mod       := 8
 
-  for i, v := range l_counts.uniq {
-    if v > max_val {
-      max_val   = v
-      max_pos   = uint(i)
+  // pick the "obvious" matches, i.e., certain letters
+  // are the only possible letters that can fit in a spot
+  // so we pick those first
+  for i, _ := range l_counts.pos {
+    for j, _ := range l_counts.pos[i] {
+
+      if l_counts.pos[i][j] == uint(l_list_size) {
+        max_pos = uint(j + 65)
+        fmt.Printf("OBVIOUS!!!!\n")
+
+        break;
+      } else {
+        if l_counts.pos[i][j] != 0 {
+          break
+        }
+      }
+    }
+
+    if max_pos > 0 {
+      break
     }
   }
 
-  return byte(max_pos + 65), ""
+  // weren't able to pick an obvious match, so we pick the
+  // letter that occurs in the most words
+  if max_pos == 0 {
+    max_total   := uint(0)
+    mod         := 10.0
+
+    for i, v := range l_counts.uniq {
+      if v > max_val {
+        max_val   = v
+        max_pos   = uint(i)
+        max_total = l_counts.total[i]
+      }
+
+      // the tie breakers
+      if v == max_val {
+        // pick the letter that occurs overall the most
+        if l_counts.total[i] > max_total {
+          //fmt.Printf("***SWITCH MADE\n")
+          max_val = v
+          max_pos = uint(i)
+          max_total = l_counts.total[i]
+        } else if rand.Int() % int(mod) == 0 {
+          //fmt.Printf("***RAND SELECTED\n")
+          max_val   = v
+          max_pos   = uint(i)
+          max_total = l_counts.total[i]
+
+          // this number is choosen somewhat arbitrarily
+          // the intention is to randomly select the new letter
+          // with decreasing probability 
+          mod *= 1.8
+        }
+      }
+    }
+    max_pos += 65
+  }
+
+  return byte(max_pos), ""
 }
 
 
@@ -156,6 +216,7 @@ func updates (l byte, w string) {
 
   }
 }
+
 
 func word_removal_count(w string) {
   var temp [26]uint
