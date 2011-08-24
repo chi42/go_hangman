@@ -60,14 +60,14 @@ func try_word (word string) {
   fmt.Printf("so far: %s\n", l_so_far)
 
   for {
-    l, w := pick()
+    l := pick()
 
-    lg, wg := try_guess(l, w)
+    lg,wg := try_guess(l)
     if !lg {
       bad_tries++
     }
     total_tries += 1
-    if !updates (l, w) {
+    if !updates (l) {
       fmt.Printf("No such word in dictionary!\n")
       return
     }
@@ -76,7 +76,6 @@ func try_word (word string) {
     fmt.Printf("so far: %s\n", l_so_far)
 
     if wg {
-      //fmt.Printf("<%d %s\n>%d %s\n", total_tries, l_word, bad_tries, l_word)
       break
     }
   }
@@ -86,7 +85,7 @@ func try_word (word string) {
 
 // based on counters and current progress, attempt to guess a new
 // letter or word
-func pick () (byte, string) {
+func pick () byte {
 
   // a pseudo randomish seed, not perfect but better then
   // an obviously deterministic random number generater
@@ -103,8 +102,6 @@ func pick () (byte, string) {
 
       if l_counts.pos[i][j] == uint(l_list_size) {
         max_pos = uint(j + 65)
-        //fmt.Printf("OBVIOUS!!!!\n")
-
         break
       } else {
         if l_counts.pos[i][j] != 0 {
@@ -121,85 +118,54 @@ func pick () (byte, string) {
   // weren't able to pick an obvious match, so we pick the
   // letter that occurs in the most words
   if max_pos == 0 {
-    max_total   := uint(0)
-    mod         := 10.0
-
     for i, v := range l_counts.uniq {
       if v > max_val {
         max_val   = v
         max_pos   = uint(i)
         max_total = l_counts.total[i]
       }
-
-      // the tie breakers
-      if v == max_val {
-         // pick the letter randomly
-        if rand.Int() % int(mod) == 0 {
-          //fmt.Printf("***RAND SELECTED\n")
-          max_val   = v
-          max_pos   = uint(i)
-          max_total = l_counts.total[i]
-
-          // this number is choosen somewhat arbitrarily
-          // the intention is to randomly select the new letter
-          // with decreasing probability 
-          mod += (float64(i) * 2.0) 
-
-        // pick the letter that occurs overall the most
-        } else if l_counts.total[i] > max_total {
-          //fmt.Printf("***SWITCH MADE\n")
-          max_val = v
-          max_pos = uint(i)
-          max_total = l_counts.total[i]
-        }
-      }
     }
     max_pos += 65
   }
 
-  return byte(max_pos), ""
+  return byte(max_pos)
 }
 
 
 // update counts and various other variables after a letter
 // or word is guessed
-func updates (l byte, w string) bool {
+func updates (l byte) bool {
 
-  if l > 0 {
-    index := l - 65
-    l_counts.total[index] = 0
-    l_counts.uniq[index]  = 0
-    for i, _ := range l_counts.pos {
-      l_counts.pos[i][index] = 0
-    }
+  index := l - 65
+  l_counts.total[index] = 0
+  l_counts.uniq[index]  = 0
+  for i, _ := range l_counts.pos {
+    l_counts.pos[i][index] = 0
+  }
 
-    var e_prev *list.Element
+  var e_prev *list.Element
 
-    e_prev = l_lis.Front().Next()
-    for e := l_lis.Front(); e != nil; e = e.Next() {
-      for i, val := range e.Value.(string) {
-        // two kinds of words to remove:
-        //    word does not contain the guessed letter at the same spot(s)
-        //    or word contains the guessed letter, but not in the same spot(s)
-        if (l_so_far[i] != BLANK && l_so_far[i] != uint8(val)) ||
-              (l_so_far[i] != l && uint8(val) == l) {
-          word_removal_count(e.Value.(string))
-          l_list_size--
+  e_prev = l_lis.Front().Next()
+  for e := l_lis.Front(); e != nil; e = e.Next() {
+    for i, val := range e.Value.(string) {
+      // two kinds of words to remove:
+      //    word does not contain the guessed letter at the same spot(s)
+      //    or word contains the guessed letter, but not in the same spot(s)
+      if (l_so_far[i] != BLANK && l_so_far[i] != uint8(val)) ||
+            (l_so_far[i] != l && uint8(val) == l) {
+        word_removal_count(e.Value.(string))
+        l_list_size--
 
-          if l_list_size == 0 {
-            return false
-          }
-
-          l_lis.Remove(e)
-          e = e_prev
-          break
+        if l_list_size == 0 {
+          return false
         }
-      }
-      e_prev = e
-    }
-  // consider the instance of where we guessed a wrong, and guessed wrong
-  } else {
 
+        l_lis.Remove(e)
+        e = e_prev
+        break
+      }
+    }
+    e_prev = e
   }
 
   return true
@@ -235,7 +201,7 @@ func word_removal_count(w string) {
 // either the character 'l' or the word 'w'
 // return:
 //    success of letter guess, overall success (i.e if word is completed)
-func try_guess (l byte, w string) (bool, bool) {
+func try_guess (l byte) (bool,bool) {
   l_match := false
 
   if l > 0 {
@@ -249,12 +215,12 @@ func try_guess (l byte, w string) (bool, bool) {
 
  for _, v := range l_so_far {
    if v == BLANK {
-     return l_match, false
+     return l_match,false
    }
  }
 
 
- return true, true
+ return true,true
 }
 
 
